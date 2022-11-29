@@ -8,7 +8,16 @@ namespace MagicVilla_VillaAPI.Dto
         [Required]
         [MaxLength(30)]
         public string Name { get; set; }
-        public DateTime CreatedDate { get; set; }
+
+        /// <summary>
+        /// 占有率
+        /// </summary>
+        public int Occupancy { get; set; }
+
+        /// <summary>
+        /// 平方フィート
+        /// </summary>
+        public int Sqft { get; set; }
 
     }
 }
