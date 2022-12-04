@@ -1,6 +1,5 @@
 // using Serilog;
 
-using MagicVilla_VillaAPI.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,8 +26,6 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 自作のインターフェース、クラスを使用してログを作成した場合は、DIコンテナ（or コンテナ）に取るべき実装を登録しなければならない
-builder.Services.AddSingleton<ILogging, LoggingV2>();
 
 var app = builder.Build();
 
