@@ -1,6 +1,19 @@
+// using Serilog;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+/* serilogを使用したログのファイルへの書き込み　※本当はserilogを使わないならパッケージも削除したほうが良い！！
+// new LoggerConfiguration()でログの構成
+// MinimunLevelでエラーの最小レベルを定義することができ、それ以上のものがログとして記録される（MinimumLevel.でインテリセンスを見るとFatal, Warningなどが見れる）
+// WriteTo.File("log/villaLogs.txt", rollingInterval:r)はどのファイルにいつ書き込むのかを定義している
+//Log.Logger = new LoggerConfiguration().MinimumLevel.Debug()
+//    .WriteTo.File("log/villaLogs.txt", rollingInterval:RollingInterval.Day).CreateLogger();
+
+//// ログの構成を定義したらこのログ構成を使用することを伝える必要がある
+//builder.Host.UseSerilog();
+*/
 
 builder.Services.AddControllers(option => {
     // 下記のオプションをコメントするとMediaTypeがtext/plainでも想定しているエラーが出力されるが
