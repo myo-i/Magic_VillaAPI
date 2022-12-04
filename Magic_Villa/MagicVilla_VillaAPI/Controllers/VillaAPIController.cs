@@ -11,10 +11,20 @@ namespace MagicVilla_VillaAPI.Controllers
     [ApiController]
     public class VillaAPIController : ControllerBase
     {
+
+        // private変数は"_"でハイライトしたりする
+        private readonly ILogger<VillaAPIController> _logger;
+
+        public VillaAPIController(ILogger<VillaAPIController> logger)
+        {
+            _logger = logger;
+        }
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VillaDto))]
         public ActionResult<IEnumerable<VillaDto>> GetVillas()
         {
+            _logger.LogInformation("Getting all Villas");
             return Ok(VillaStore.villaList);
         }
 
@@ -30,9 +40,9 @@ namespace MagicVilla_VillaAPI.Controllers
 
         public ActionResult<VillaDto> GetVilla(int id)
         {
-
             if (id == 0)
             {
+                _logger.LogInformation("Get Villa Error with id" + id);
                 return BadRequest();
             }
 
