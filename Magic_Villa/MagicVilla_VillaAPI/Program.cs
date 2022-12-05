@@ -1,9 +1,18 @@
 // using Serilog;
 
 
+using MagicVilla_VillaAPI.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+// SQLデータベースをコンテナに追加する
+builder.Services.AddDbContext<ApplicationDbContext>(option =>
+{
+    option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
+});
 
 /* serilogを使用したログのファイルへの書き込み　※本当はserilogを使わないならパッケージも削除したほうが良い！！
 // new LoggerConfiguration()でログの構成
