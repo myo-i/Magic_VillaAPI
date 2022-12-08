@@ -3,6 +3,7 @@ using MagicVilla_VillaAPI.Dto;
 using MagicVilla_VillaAPI.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MagicVilla_VillaAPI.Controllers
 {
@@ -176,11 +177,13 @@ namespace MagicVilla_VillaAPI.Controllers
             {
                 return BadRequest();
             }
-            var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
-            if (villa == null)
-            {
-                return BadRequest();
-            }
+            //if (villa == null)
+            //{
+            //    return BadRequest();
+            //}
+
+            // DBで同時に2つのIdを追跡することはできないため、追跡しないように設定する
+            var villa = _db.Villas.AsNoTracking().FirstOrDefault(u => u.Id == id);
 
             // patchのみ完全なオブジェクトを取得するのではなく、更新が必要なフィールドのみを受け取っているので
             // ここではVillasをVillaDtoに変換する必要がある
