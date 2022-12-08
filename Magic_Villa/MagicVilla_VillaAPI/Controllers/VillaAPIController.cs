@@ -3,6 +3,7 @@ using MagicVilla_VillaAPI.Dto;
 using MagicVilla_VillaAPI.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MagicVilla_VillaAPI.Controllers
 {
@@ -15,16 +16,20 @@ namespace MagicVilla_VillaAPI.Controllers
         // private変数は"_"でハイライトしたりする
         //private readonly ILogger<VillaAPIController> _logger;
 
+        private readonly ApplicationDbContext _db;
 
-        public VillaAPIController()
+
+        public VillaAPIController(ApplicationDbContext db)
         {
+            _db = db;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VillaDto))]
         public ActionResult<IEnumerable<VillaDto>> GetVillas()
         {
-            return Ok(VillaStore.villaList);
+            // Villasはテーブル
+            return Ok(_db.Villas);
         }
 
         [HttpGet("{id:int}", Name ="GetVilla")]
@@ -44,7 +49,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 return BadRequest();
             }
 
-            var villa = VillaStore.villaList.FirstOrDefault(x => x.Id == id);
+            var villa = _db.Villas.FirstOrDefault(x => x.Id == id);
 
             if (villa == null)
             {
@@ -65,7 +70,7 @@ namespace MagicVilla_VillaAPI.Controllers
             //    return BadRequest();
             //}
             // Nameが重複した場合、エラー処理に入る
-            if(VillaStore.villaList.FirstOrDefault(u=>u.Name.ToLower()==villaDto.Name.ToLower()) != null)
+            if(_db.Villas.FirstOrDefault(u=>u.Name.ToLower()==villaDto.Name.ToLower()) != null)
             {
                 // 最初のパラメーターはキー名を表す
                 ModelState.AddModelError("", "Villa already Exists!!");
@@ -83,8 +88,26 @@ namespace MagicVilla_VillaAPI.Controllers
             }
 
             // Id降順（4,3,2,1のような）で並べた際の一番最初のId+1を代入
-            villaDto.Id = VillaStore.villaList.OrderByDescending(u => u.Id).FirstOrDefault().Id + 1;
-            VillaStore.villaList.Add(villaDto);
+            // Idは自動的に生成されるため削除
+            //villaDto.Id = _db.Villas.OrderByDescending(u => u.Id).FirstOrDefault().Id + 1;
+
+            // VillaDtoを暗黙的にVillaに変換できないため、VillaDtoの値をVillaに渡している
+            Villa model = new Villa()
+            {
+                Id = villaDto.Id,
+                Name = villaDto.Name,
+                Rate= villaDto.Rate,
+                Details= villaDto.Details,
+                ImageUrl= villaDto.ImageUrl,
+                Occupancy= villaDto.Occupancy,
+                Sqft= villaDto.Sqft,
+                Amenity= villaDto.Amenity,
+
+            };
+            _db.Villas.Add(model);
+            // 変更をプッシュ
+            _db.SaveChanges();
+
 
             return CreatedAtRoute("GetVilla", new { id = villaDto.Id}, villaDto);
         }
@@ -99,12 +122,14 @@ namespace MagicVilla_VillaAPI.Controllers
             {
                 return BadRequest();
             }
-            var villa = VillaStore.villaList.FirstOrDefault(u=>u.Id== id);
+            var villa = _db.Villas.FirstOrDefault(u=>u.Id== id);
             if(villa == null)
             {
                 return NotFound();
             }
-            VillaStore.villaList.Remove(villa);
+            _db.Villas.Remove(villa);
+            // 変更をプッシュ
+            _db.SaveChanges();
 
             // 削除時は基本的にNoContentを返す
             return NoContent();
@@ -119,10 +144,26 @@ namespace MagicVilla_VillaAPI.Controllers
             {
                 return BadRequest();
             }
-            var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
-            villa.Name = villaDto.Name;
-            villa.Sqft= villaDto.Sqft;
-            villa.Occupancy = villaDto.Occupancy;
+            // Idから自動的にどのレコードを更新するのか判断してくれるので削除
+            //var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
+            //villa.Name = villaDto.Name;
+            //villa.Sqft= villaDto.Sqft;
+            //villa.Occupancy = villaDto.Occupancy;
+            Villa model = new Villa()
+            {
+                Id = villaDto.Id,
+                Name = villaDto.Name,
+                Rate = villaDto.Rate,
+                Details = villaDto.Details,
+                ImageUrl = villaDto.ImageUrl,
+                Occupancy = villaDto.Occupancy,
+                Sqft = villaDto.Sqft,
+                Amenity = villaDto.Amenity,
+            };
+            _db.Villas.Update(model);
+            // 変更をプッシュ
+            _db.SaveChanges();
+
 
             return NoContent();
         }
@@ -136,20 +177,53 @@ namespace MagicVilla_VillaAPI.Controllers
             {
                 return BadRequest();
             }
-            var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
-            if (villa == null)
+            //if (villa == null)
+            //{
+            //    return BadRequest();
+            //}
+
+            // DBで同時に2つのIdを追跡することはできないため、追跡しないように設定する
+            var villa = _db.Villas.AsNoTracking().FirstOrDefault(u => u.Id == id);
+
+            // patchのみ完全なオブジェクトを取得するのではなく、更新が必要なフィールドのみを受け取っているので
+            // ここではVillasをVillaDtoに変換する必要がある
+            VillaDto villaDto = new VillaDto()
             {
-                return BadRequest();
-            }
+                Id = villa.Id,
+                Name = villa.Name,
+                Rate = villa.Rate,
+                Details = villa.Details,
+                ImageUrl = villa.ImageUrl,
+                Occupancy = villa.Occupancy,
+                Sqft = villa.Sqft,
+                Amenity = villa.Amenity,
+            };
 
             // patchの適用
-            patchDto.ApplyTo(villa, ModelState);
+            patchDto.ApplyTo(villaDto, ModelState);
 
             // Modelが利用可能か判定
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+
+            // EntityFramework Coreで更新を呼び出すにはVillaである必要があるため
+            // VillaDtoをVillaに戻す必要がある
+            Villa model = new Villa()
+            {
+                Id = villaDto.Id,
+                Name = villaDto.Name,
+                Rate = villaDto.Rate,
+                Details = villaDto.Details,
+                ImageUrl = villaDto.ImageUrl,
+                Occupancy = villaDto.Occupancy,
+                Sqft = villaDto.Sqft,
+                Amenity = villaDto.Amenity,
+            };
+            _db.Villas.Update(model);
+            _db.SaveChanges();
+
 
             return NoContent();
         }
