@@ -26,10 +26,12 @@ namespace MagicVilla_VillaAPI.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VillaDto))]
-        public ActionResult<IEnumerable<VillaDto>> GetVillas()
+        // awaitを使用する場合、メソッドにasyncを付与して返り値をTaskにしなければいけない
+        public async Task<ActionResult<IEnumerable<VillaDto>>> GetVillas()
         {
             // Villasはテーブル
-            return Ok(_db.Villas);
+            //非同期で処理しているタスクの完了を待つ場合はawaitで明示する。
+            return Ok(await _db.Villas.ToListAsync());
         }
 
         [HttpGet("{id:int}", Name = "GetVilla")]
@@ -41,15 +43,17 @@ namespace MagicVilla_VillaAPI.Controllers
         //[ProducesResponseType(200, Type = typeof(VillaDto))]
         //[ProducesResponseType(400)]
         //[ProducesResponseType(404)]
+        // awaitを使用する場合、メソッドにasyncを付与して返り値をTaskにしなければいけない
 
-        public ActionResult<VillaDto> GetVilla(int id)
+        public async Task<ActionResult<VillaDto>> GetVilla(int id)
         {
             if (id == 0)
             {
                 return BadRequest();
             }
 
-            var villa = _db.Villas.FirstOrDefault(x => x.Id == id);
+            //非同期で処理しているタスクの完了を待つ場合はawaitで明示する。
+            var villa = await _db.Villas.FirstOrDefaultAsync(x => x.Id == id);
 
             if (villa == null)
             {
@@ -63,14 +67,14 @@ namespace MagicVilla_VillaAPI.Controllers
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(VillaDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<VillaDto> CreateVilla([FromBody] VillaCreateDto villaDto)
+        public async Task<ActionResult<VillaDto>> CreateVilla([FromBody] VillaCreateDto villaDto)
         {
             //if (!ModelState.IsValid)
             //{
             //    return BadRequest();
             //}
             // Nameが重複した場合、エラー処理に入る
-            if (_db.Villas.FirstOrDefault(u => u.Name.ToLower() == villaDto.Name.ToLower()) != null)
+            if (await _db.Villas.FirstOrDefaultAsync(u => u.Name.ToLower() == villaDto.Name.ToLower()) != null)
             {
                 // 最初のパラメーターはキー名を表す
                 ModelState.AddModelError("", "Villa already Exists!!");
@@ -104,41 +108,41 @@ namespace MagicVilla_VillaAPI.Controllers
                 Amenity = villaDto.Amenity,
 
             };
-            _db.Villas.Add(model);
+            await _db.Villas.AddAsync(model);
             // 変更をプッシュ
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             // この関数内ではIdを持つのはmodelなのでvillaDto.Idからmodel.Idに変更
             return CreatedAtRoute("GetVilla", new { id = model.Id }, model);
         }
 
-        [HttpDelete("{id:int}", Name = "GetVilla")]
+        [HttpDelete("{id:int}", Name = "DeleteVilla")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult DeleteVilla(int id)
+        public async Task<IActionResult> DeleteVilla(int id)
         {
             if (id == 0)
             {
                 return BadRequest();
             }
-            var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
+            var villa = await _db.Villas.FirstOrDefaultAsync(u => u.Id == id);
             if (villa == null)
             {
                 return NotFound();
             }
             _db.Villas.Remove(villa);
             // 変更をプッシュ
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             // 削除時は基本的にNoContentを返す
             return NoContent();
         }
 
-        [HttpPut]
+        [HttpPut("id:int", Name="UpdateVilla")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult UpdateVilla(int id, [FromBody] VillaUpdateDto villaDto)
+        public async Task<IActionResult> UpdateVilla(int id, [FromBody] VillaUpdateDto villaDto)
         {
             if (villaDto == null || id != villaDto.Id)
             {
@@ -162,7 +166,7 @@ namespace MagicVilla_VillaAPI.Controllers
             };
             _db.Villas.Update(model);
             // 変更をプッシュ
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
 
             return NoContent();
@@ -171,7 +175,7 @@ namespace MagicVilla_VillaAPI.Controllers
         [HttpPatch("{id:int}", Name = "UpdatePartialVilla")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDto> patchDto)
+        public async Task<IActionResult> UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDto> patchDto)
         {
             if (patchDto == null || id == 0)
             {
@@ -183,7 +187,7 @@ namespace MagicVilla_VillaAPI.Controllers
             //}
 
             // DBで同時に2つのIdを追跡することはできないため、追跡しないように設定する
-            var villa = _db.Villas.AsNoTracking().FirstOrDefault(u => u.Id == id);
+            var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
 
             // patchのみ完全なオブジェクトを取得するのではなく、更新が必要なフィールドのみを受け取っているので
             // ここではVillasをVillaDtoに変換する必要がある
@@ -222,7 +226,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 Amenity = villaDto.Amenity,
             };
             _db.Villas.Update(model);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
 
             return NoContent();
