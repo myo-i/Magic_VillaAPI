@@ -1,6 +1,7 @@
 // using Serilog;
 
 
+using MagicVilla_VillaAPI;
 using MagicVilla_VillaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(option =>
 //// ログの構成を定義したらこのログ構成を使用することを伝える必要がある
 //builder.Host.UseSerilog();
 */
+
+// オートマッピングの登録
+builder.Services.AddAutoMapper(typeof(MappingConfig));
 
 builder.Services.AddControllers(option => {
     // 下記のオプションをコメントするとMediaTypeがtext/plainでも想定しているエラーが出力されるが
